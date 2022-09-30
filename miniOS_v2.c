@@ -8,9 +8,12 @@
  ##     ##      ###  ## ###  ##  ##
 ##      ##      ##   ## ##   ##  ##
 ####### ##       #####   #####  ####
-ÏîÄ¿£º¡ª¡ªminiOSĞ¡ĞÍ¶àÈÎÎñÏµÍ³Éè¼Æ¡ª¡ª
-¹¦ÄÜ£ºÊÊÅäCortex M3
-ÖÂĞ»£º¸ĞĞ»rt_threadµÄÏîÄ¿
+é¡¹ç›®ï¼šâ€”â€”miniOSå°å‹å¤šä»»åŠ¡ç³»ç»Ÿè®¾è®¡â€”â€”
+åŠŸèƒ½ï¼šé€‚é…Cortex M3
+è‡´è°¢ï¼šæ„Ÿè°¢rt_threadçš„é¡¹ç›®
+*****************************************
+@ æµ·å—å¤§å­¦ ä¿¡æ¯ä¸é€šä¿¡å·¥ç¨‹å­¦é™¢
+   åµŒå…¥å¼æ™ºèƒ½ç³»ç»Ÿå®éªŒå®¤
 *******copyright v2.0 2022.07.31 ********/
 
 struct miniOS_RtTask_s
@@ -45,10 +48,10 @@ struct miniOS_RtTask_s
 // 	unsigned char index7:1;
 // };
 
-/*ĞÅºÅÁ¿½á¹¹Ìå*/
+/*ä¿¡å·é‡ç»“æ„ä½“*/
 /*
- * nowBind ÏÖÔÚÊ¹ÓÃ×ÊÔ´µÄtaskID
- * isTaked ×ÊÔ´ÊÇ·ñ±»Ê¹ÓÃµÄ±êÖ¾
+ * nowBind ç°åœ¨ä½¿ç”¨èµ„æºçš„taskID
+ * isTaked èµ„æºæ˜¯å¦è¢«ä½¿ç”¨çš„æ ‡å¿—
  */
 struct miniOS_sem_s
 {
@@ -56,20 +59,20 @@ struct miniOS_sem_s
     uint8_t isTaked;
 };
 
-volatile static uint32_t miniOS_TimeTick = 0;                                /*ĞÄÌø¼ÆÊı*/
-volatile static uint32_t miniOS_delay = 0;                                   /*ÉµµÈ¼ÆÊı*/
-volatile static miniOS_ID_t miniOsCurTaskID = os_Task_sum;                   /*µ±Ç°ÔËĞĞID*/
-volatile static miniOS_ID_t miniOsNextTaskID, miniOsTaskReady = os_Task_sum; /*ÏÂÒ»¸öÒªÔËĞĞµÄÈÎÎñ*/
+volatile static uint32_t miniOS_TimeTick = 0;                                /*å¿ƒè·³è®¡æ•°*/
+volatile static uint32_t miniOS_delay = 0;                                   /*å‚»ç­‰è®¡æ•°*/
+volatile static miniOS_ID_t miniOsCurTaskID = os_Task_sum;                   /*å½“å‰è¿è¡ŒID*/
+volatile static miniOS_ID_t miniOsNextTaskID, miniOsTaskReady = os_Task_sum; /*ä¸‹ä¸€ä¸ªè¦è¿è¡Œçš„ä»»åŠ¡*/
 
 /***********************/
-/*       µÚ¶ş°æ±¾      */
+/*       ç¬¬äºŒç‰ˆæœ¬      */
 /***********************/
 
 /*
- * miniOS_curTask;   µ±Ç°ÈÎÎñÖ¸Õë
- * miniOS_nextTask;  ÏÂÒ»ÈÎÎñÖ¸Õë
- * miniOS_CurTaskID; µ±Ç°ÈÎÎñID
- * miniOS_NextTaskID;ÏÂÒ»ÈÎÎñÖ¸Õë
+ * miniOS_curTask;   å½“å‰ä»»åŠ¡æŒ‡é’ˆ
+ * miniOS_nextTask;  ä¸‹ä¸€ä»»åŠ¡æŒ‡é’ˆ
+ * miniOS_CurTaskID; å½“å‰ä»»åŠ¡ID
+ * miniOS_NextTaskID;ä¸‹ä¸€ä»»åŠ¡æŒ‡é’ˆ
  */
 miniOS_RtTask_p miniOS_curTask;
 miniOS_ID_t miniOS_CurTaskID;
@@ -77,33 +80,33 @@ miniOS_ID_t miniOS_CurTaskID;
 miniOS_RtTask_p miniOS_nextTask;
 miniOS_ID_t miniOS_NextTaskID;
 
-/*ÈÎÎñ±í£ºÒÔÊı×é·½Ê½ÊµÏÖ*/
+/*ä»»åŠ¡è¡¨ï¼šä»¥æ•°ç»„æ–¹å¼å®ç°*/
 miniOS_RtTask_t miniOS_RtTask_Table[os_Task_sum] = {0};
 
 static miniOS_sem_t miniOS_sem_table[os_Task_sum] = {0};
 
-/*idleÏß³ÌÕ»*/
+/*idleçº¿ç¨‹æ ˆ*/
 miniOS_STK idleStack[idleStackSize];
 
-/*cpuÕ»*/
+/*cpuæ ˆ*/
 miniOS_STK miniOS_CPU_ExceptStk[miniOS_CPU_ExceptStkSize];
 
-/*cpuÕ»»ùµØÖ·*/
+/*cpuæ ˆåŸºåœ°å€*/
 miniOS_STK *miniOS_CPU_ExceptStkBase;
 
-/*ÈÎÎñ½áÊøÇåÀíº¯Êı*/
+/*ä»»åŠ¡ç»“æŸæ¸…ç†å‡½æ•°*/
 void Task_End(void)
 {
     miniOS_RtTask_Delete((miniOS_ID_t)miniOS_curTask->thisID);
-    /*ÊÇ·ñ¿ÉÒÔmallocºÍfreeÀ´ÊÍ·Å×ÊÔ´*/
+    /*æ˜¯å¦å¯ä»¥mallocå’Œfreeæ¥é‡Šæ”¾èµ„æº*/
     if (miniOS_curTask->sp != NULL)
         free(miniOS_curTask->sp);
     miniOS_RtTask_SW();
 }
 
-/*¿ÕÏĞÏß³Ì*/
+/*ç©ºé—²çº¿ç¨‹*/
 /*
- * __WFE Ê¹µÃCPU½øÈëµÈ´ıÖĞ¶Ï»òÕßµÈ´ıÊÂ¼ş£¬Ò²¾ÍÊÇµÍ¹¦ºÄÄ£Ê½
+ * __WFE ä½¿å¾—CPUè¿›å…¥ç­‰å¾…ä¸­æ–­æˆ–è€…ç­‰å¾…äº‹ä»¶ï¼Œä¹Ÿå°±æ˜¯ä½åŠŸè€—æ¨¡å¼
  */
 void miniOS_RtTask_Idle(void *arg)
 {
@@ -122,7 +125,7 @@ void miniOS_RtTask_Idle(void *arg)
     }
 }
 
-/*miniOS ³ÌĞò½á¹¹ ³õÊ¼»¯º¯Êı*/
+/*miniOS ç¨‹åºç»“æ„ åˆå§‹åŒ–å‡½æ•°*/
 void miniOS_Rt_Init()
 {
     int i = 0;
@@ -156,16 +159,16 @@ void miniOS_Rt_Init()
     return;
 }
 
-/*miniOSÏß³Ì´´½¨ÓëÈÎÎñ×¢²á*/
+/*miniOSçº¿ç¨‹åˆ›å»ºä¸ä»»åŠ¡æ³¨å†Œ*/
 /*
- * miniOS_ID_t wantRegTaskId,  Ïß³Ì±íÖĞµÄIDºÅ
- * miniOS_TASK task,           Ïß³ÌÈë¿ÚµØÖ·
- * miniOS_STK_Type             Ïß³ÌÕ»ÀàĞÍ
- * miniOS_STK *stackBaseptr    Ïß³ÌÕ»»ùµØÖ·
- * miniOS_STK *stackptr ,      Ïß³ÌÕ»µ×µØÖ·£¬²ÉÓÃµİ¼õÕ»¿Õ¼äÊ¹ÓÃ
- * miniOS_TaskStatus_t runflag,Ïß³Ìµ÷¶ÈµÚÒ»´Î±êÖ¾
- * uint16_t runPerid,          Ïß³ÌÓµÓĞÊ±¼äÆ¬
- * uint16_t runTime            Ïß³ÌÑÓ³ÙÆô¶¯Ê±¼ä£¬ÅäºÏos_suspend±êÖ¾
+ * miniOS_ID_t wantRegTaskId,  çº¿ç¨‹è¡¨ä¸­çš„IDå·
+ * miniOS_TASK task,           çº¿ç¨‹å…¥å£åœ°å€
+ * miniOS_STK_Type             çº¿ç¨‹æ ˆç±»å‹
+ * miniOS_STK *stackBaseptr    çº¿ç¨‹æ ˆåŸºåœ°å€
+ * miniOS_STK *stackptr ,      çº¿ç¨‹æ ˆåº•åœ°å€ï¼Œé‡‡ç”¨é€’å‡æ ˆç©ºé—´ä½¿ç”¨
+ * miniOS_TaskStatus_t runflag,çº¿ç¨‹è°ƒåº¦ç¬¬ä¸€æ¬¡æ ‡å¿—
+ * uint16_t runPerid,          çº¿ç¨‹æ‹¥æœ‰æ—¶é—´ç‰‡
+ * uint16_t runTime            çº¿ç¨‹å»¶è¿Ÿå¯åŠ¨æ—¶é—´ï¼Œé…åˆos_suspendæ ‡å¿—
  */
 void miniOS_task_create(miniOS_ID_t wantRegTaskId,
                         miniOS_TASK task,
@@ -180,10 +183,10 @@ void miniOS_task_create(miniOS_ID_t wantRegTaskId,
                         uint16_t runPerid,
                         uint16_t runTime)
 {
-    /*»ñÈ¡Ïß³Ì¿ØÖÆ¿éµØÖ·*/
+    /*è·å–çº¿ç¨‹æ§åˆ¶å—åœ°å€*/
     miniOS_RtTask_t *tcb = &miniOS_RtTask_Table[wantRegTaskId];
 
-    //µÚÒ»²½ ÉèÖÃÕ»»ùµØÖ·ÓëÕ»³õÊ¼»¯
+    //ç¬¬ä¸€æ­¥ è®¾ç½®æ ˆåŸºåœ°å€ä¸æ ˆåˆå§‹åŒ–
     miniOS_STK *p_stackkptr;
     p_stackkptr = stackptr;
     p_stackkptr = (miniOS_STK *)((miniOS_STK)(p_stackkptr)&0xFFFFFFF8);
@@ -206,7 +209,7 @@ void miniOS_task_create(miniOS_ID_t wantRegTaskId,
     *(--p_stackkptr) = (miniOS_STK)0x04040404uL; // R4
     tcb->stackptr = p_stackkptr;
 
-    //µÚ¶ş²½£¬ÉèÖÃÏß³ÌÏà¹ØĞÅÏ¢
+    //ç¬¬äºŒæ­¥ï¼Œè®¾ç½®çº¿ç¨‹ç›¸å…³ä¿¡æ¯
     tcb->runflag = os_sleep;
     tcb->runState = os_sleep;
     tcb->runPerid = 10;
@@ -222,9 +225,9 @@ void miniOS_task_create(miniOS_ID_t wantRegTaskId,
     tcb->thisID = wantRegTaskId;
 }
 
-/*ÉèÖÃÏÂÒ»´ÎÔËĞĞµÄÏß³ÌID*/
+/*è®¾ç½®ä¸‹ä¸€æ¬¡è¿è¡Œçš„çº¿ç¨‹ID*/
 /*
- * id ; ÏÂÒ»´ÎÔËĞĞµÄID
+ * id ; ä¸‹ä¸€æ¬¡è¿è¡Œçš„ID
  */
 void setNext(miniOS_ID_t id)
 {
@@ -232,14 +235,14 @@ void setNext(miniOS_ID_t id)
     miniOsNextTaskID = id;
 }
 
-/*rt°æ±¾Ïß³ÌÇĞ»»*/
+/*rtç‰ˆæœ¬çº¿ç¨‹åˆ‡æ¢*/
 void miniOS_RtTask_SW()
 {
     int i = 0;
     miniOS_RtTask_p tcb = NULL;
     int32_t level = 0;
     level = miniOS_hw_interrupt_disable();
-    /*±éÀúÈÎÎñ±í£¬½«os_run±êÖ¾µÄÈÎÎñÕÒ³öÀ´*/
+    /*éå†ä»»åŠ¡è¡¨ï¼Œå°†os_runæ ‡å¿—çš„ä»»åŠ¡æ‰¾å‡ºæ¥*/
     for (i = 0; i < os_Task_sum; i++)
     {
         tcb = &miniOS_RtTask_Table[i];
@@ -256,7 +259,7 @@ void miniOS_RtTask_SW()
     }
     // printf("sw:%d",i);
     /*if can't find any 'os_run' task, let next task become os_Task_idle*/
-    /*Èç¹ûÕÒ²»µ½ÈÎºÎos_run ±êÖ¾µÄ	Ïß³Ì£¬¾ÍÈÃÏÂÒ»¸öÈÎÎñ Ö¸ÏòidleÏß³Ì£¨ÏÂÒ»´Îµ÷¶È£©*/
+    /*å¦‚æœæ‰¾ä¸åˆ°ä»»ä½•os_run æ ‡å¿—çš„	çº¿ç¨‹ï¼Œå°±è®©ä¸‹ä¸€ä¸ªä»»åŠ¡ æŒ‡å‘idleçº¿ç¨‹ï¼ˆä¸‹ä¸€æ¬¡è°ƒåº¦ï¼‰*/
     if (i == os_Task_sum)
         i = os_Task_idle;
 
@@ -265,9 +268,9 @@ void miniOS_RtTask_SW()
     miniOS_Hw_contextSw();
 }
 
-/*miniOSÏß³ÌÉ¾³ı*/
+/*miniOSçº¿ç¨‹åˆ é™¤*/
 /*
- * taskID£¬ÒªÉ¾³ıµÄÏß³ÌID
+ * taskIDï¼Œè¦åˆ é™¤çš„çº¿ç¨‹ID
  */
 void miniOS_RtTask_Delete(miniOS_ID_t taskID)
 {
@@ -278,19 +281,19 @@ void miniOS_RtTask_Delete(miniOS_ID_t taskID)
     miniOS_RtTask_Table[taskID].stackptr = NULL;
 }
 
-/*miniOSÏß³Ì¾ÍĞ÷*/
+/*miniOSçº¿ç¨‹å°±ç»ª*/
 /*
- * taskID£¬Òª¼ÓÈë¾ÍĞ÷±íµÄÏß³ÌID
+ * taskIDï¼Œè¦åŠ å…¥å°±ç»ªè¡¨çš„çº¿ç¨‹ID
  */
 void miniOS_RtTask_AddReady(miniOS_ID_t taskID)
 {
 }
 
-/*systick Ïß³Ì·şÎñº¯Êı*/
+/*systick çº¿ç¨‹æœåŠ¡å‡½æ•°*/
 /*
- * Çë½«´Ëº¯ÊıÌí¼Ó½øsysTick Handlerº¯ÊıÖĞ
- * ´Ëº¯ÊıÍê³É£ºtick¼ÆÊı
- * ±éÀúÈÎÎñ±í£¬ÅĞ¶ÏÏß³Ì×´Ì¬²¢½øĞĞ×´Ì¬×ª»»
+ * è¯·å°†æ­¤å‡½æ•°æ·»åŠ è¿›sysTick Handlerå‡½æ•°ä¸­
+ * æ­¤å‡½æ•°å®Œæˆï¼štickè®¡æ•°
+ * éå†ä»»åŠ¡è¡¨ï¼Œåˆ¤æ–­çº¿ç¨‹çŠ¶æ€å¹¶è¿›è¡ŒçŠ¶æ€è½¬æ¢
  */
 void miniOS_RtTask_sysTickHandle()
 {
@@ -308,14 +311,14 @@ void miniOS_RtTask_sysTickHandle()
 
     for (i = 0; i < os_Task_sum; i++)
     {
-        /*»ñÈ¡Ïß³Ì¿ØÖÆ¿éµØÖ·*/
+        /*è·å–çº¿ç¨‹æ§åˆ¶å—åœ°å€*/
         tcb = &miniOS_RtTask_Table[i];
 
-        /*Ïß³ÌÈë¿Úº¯ÊıÃ»ÓĞ×¢²á¾Í²é¿´ÏÂÒ»¸öID*/
+        /*çº¿ç¨‹å…¥å£å‡½æ•°æ²¡æœ‰æ³¨å†Œå°±æŸ¥çœ‹ä¸‹ä¸€ä¸ªID*/
         if (tcb->taskentry == NULL)
             continue;
 
-        /*Èç¹ûµ±Ç°Ïß³ÌÊÇ¹ÒÆğ×´Ì¬£¬½«µÈ´ıÊ±¼ä¼õ1 tick,Ö±µ½µÈ´ıÊ±¼äµ½´ïÔò»½ĞÑÏß³Ì*/
+        /*å¦‚æœå½“å‰çº¿ç¨‹æ˜¯æŒ‚èµ·çŠ¶æ€ï¼Œå°†ç­‰å¾…æ—¶é—´å‡1 tick,ç›´åˆ°ç­‰å¾…æ—¶é—´åˆ°è¾¾åˆ™å”¤é†’çº¿ç¨‹*/
         if (tcb->runflag == os_suspend)
         {
             tcb->nextTime--;
@@ -325,7 +328,7 @@ void miniOS_RtTask_sysTickHandle()
             }
             continue;
         }
-        /*Èç¹ûÏß³ÌÊÇµÈ´ıĞÅºÅÁ¿µÄ×´Ì¬£¬Ôò¼ì²é±¾Ïß³ÌµÈ´ıµÄĞÅºÅÁ¿ÊÇ·ñ±»Õ¼ÓÃ£¬µÈ´ıĞÅºÅÁ¿ÊÍ·Åºó»½ĞÑÏß³Ì*/
+        /*å¦‚æœçº¿ç¨‹æ˜¯ç­‰å¾…ä¿¡å·é‡çš„çŠ¶æ€ï¼Œåˆ™æ£€æŸ¥æœ¬çº¿ç¨‹ç­‰å¾…çš„ä¿¡å·é‡æ˜¯å¦è¢«å ç”¨ï¼Œç­‰å¾…ä¿¡å·é‡é‡Šæ”¾åå”¤é†’çº¿ç¨‹*/
         else if (tcb->runflag == os_wait_sem)
         {
             if (miniOS_sem_table[tcb->waitSemID].isTaked == semIdle)
@@ -333,7 +336,7 @@ void miniOS_RtTask_sysTickHandle()
             continue;
         }
 
-        /*Èç¹ûµ±Ç°Ïß³ÌÊÇÔËĞĞ×´Ì¬£¬Ôò¼ì²éÏß³ÌÊ±¼äÆ¬ÊÇ·ñÓÃÍê£¬ÓÃÍêÔò½«Ïß³ÌË¯Ãß£¬½»³öcpu¿ØÖÆÈ¨£¬¸øÏÂÒ»¸öÈÎÎñ£¬²¢µÈ´ıÏÂÒ»´Î»½ĞÑ*/
+        /*å¦‚æœå½“å‰çº¿ç¨‹æ˜¯è¿è¡ŒçŠ¶æ€ï¼Œåˆ™æ£€æŸ¥çº¿ç¨‹æ—¶é—´ç‰‡æ˜¯å¦ç”¨å®Œï¼Œç”¨å®Œåˆ™å°†çº¿ç¨‹ç¡çœ ï¼Œäº¤å‡ºcpuæ§åˆ¶æƒï¼Œç»™ä¸‹ä¸€ä¸ªä»»åŠ¡ï¼Œå¹¶ç­‰å¾…ä¸‹ä¸€æ¬¡å”¤é†’*/
         else if (tcb->runflag == os_run)
         {
             tcb->runTimer++;
@@ -345,15 +348,15 @@ void miniOS_RtTask_sysTickHandle()
             continue;
         }
 
-        //ÒÔÏÂÁ½ÖÖ·½°¸¶¼¿ÉÒÔË³ÀûÖ´ĞĞÏÂÈ¥
-        /*Èç¹ûµ±Ç°Ïß³ÌÊÇË¯Ãß×´Ì¬£¬ÔòÁ¢¼´½«ÏßĞÔ»½ĞÑ*/
+        //ä»¥ä¸‹ä¸¤ç§æ–¹æ¡ˆéƒ½å¯ä»¥é¡ºåˆ©æ‰§è¡Œä¸‹å»
+        /*å¦‚æœå½“å‰çº¿ç¨‹æ˜¯ç¡çœ çŠ¶æ€ï¼Œåˆ™ç«‹å³å°†çº¿æ€§å”¤é†’*/
         else if (tcb->runflag == os_sleep)
         {
             tcb->runflag = os_run;
             continue;
         }
 
-        /*Èç¹ûµ±Ç°Ïß³ÌÊÇË¯ÃßÌ¬£¬ÔòÔÚË¯ÃßÒ»¸öÊ±¼äÆ¬Ö®ºó»½ĞÑ*/
+        /*å¦‚æœå½“å‰çº¿ç¨‹æ˜¯ç¡çœ æ€ï¼Œåˆ™åœ¨ç¡çœ ä¸€ä¸ªæ—¶é—´ç‰‡ä¹‹åå”¤é†’*/
         //	 else if (tcb->runflag == os_sleep)
         //		{
         //			tcb->runTimer++;
@@ -369,14 +372,14 @@ void miniOS_RtTask_sysTickHandle()
     miniOS_hw_interrupt_enable(level);
 }
 
-/*miniOSÑÓÊ±º¯Êı*/
+/*miniOSå»¶æ—¶å‡½æ•°*/
 /*
- * delayCount £¬ÑÓÊ±¶àÉÙ¸ösysTick
- * ÔÚµ±Ç°ÏßĞÔÃ»±»É¾³ıµÄÇ°ÌáÏÂ£¬ÉèÖÃdelayÊ±¼ä(nextTime)
- * ²¢ÒıÆğÒ»´ÎÏµÍ³µ÷¶È
- * Attention:´ËÑÓÊ±º¯Êı²»¾«×¼,ÒªÊµÏÖ×èÈûÑÓÊ±£¬ÇëÀûÓÃsystick¶¨Ê±Æ÷°´²éÑ¯·¨ÇÀÕ¼CPU£¬
-   ĞÂ½¨static uint32_t delay = 0;ÔÚsysTick HandlerÖĞÁîÆäµİ¼õ£¬ÔÚwhileÑ­»·ÖĞ²éÑ¯delayµÄÖµ
- * todo : ½«´Ëº¯Êı·ÅÈëvoid SysTick_Handler(void)
+ * delayCount ï¼Œå»¶æ—¶å¤šå°‘ä¸ªsysTick
+ * åœ¨å½“å‰çº¿æ€§æ²¡è¢«åˆ é™¤çš„å‰æä¸‹ï¼Œè®¾ç½®delayæ—¶é—´(nextTime)
+ * å¹¶å¼•èµ·ä¸€æ¬¡ç³»ç»Ÿè°ƒåº¦
+ * Attention:æ­¤å»¶æ—¶å‡½æ•°ä¸ç²¾å‡†,è¦å®ç°é˜»å¡å»¶æ—¶ï¼Œè¯·åˆ©ç”¨systickå®šæ—¶å™¨æŒ‰æŸ¥è¯¢æ³•æŠ¢å CPUï¼Œ
+   æ–°å»ºstatic uint32_t delay = 0;åœ¨sysTick Handlerä¸­ä»¤å…¶é€’å‡ï¼Œåœ¨whileå¾ªç¯ä¸­æŸ¥è¯¢delayçš„å€¼
+ * todo : å°†æ­¤å‡½æ•°æ”¾å…¥void SysTick_Handler(void)
  * sample:
        void SysTick_Handler(void)
                 {
@@ -396,15 +399,15 @@ void miniOS_Rt_Delay(uint16_t delayCount)
     miniOS_RtTask_SW();
 }
 
-/*miniOS Æô¶¯µ÷¶È£¬¿ªÊ¼´Ómainº¯Êı×ªÏòÏßĞÔµ÷¶ÈÆ÷*/
+/*miniOS å¯åŠ¨è°ƒåº¦ï¼Œå¼€å§‹ä»mainå‡½æ•°è½¬å‘çº¿æ€§è°ƒåº¦å™¨*/
 void miniOS_Rt_Start()
 {
     miniOS_Start_Asm();
 }
 
-/*×èÈûÑÓÊ±º¯Êı*/
+/*é˜»å¡å»¶æ—¶å‡½æ•°*/
 /*
- * nTick ,×èÈûµÈ´ıÑÓÊ±
+ * nTick ,é˜»å¡ç­‰å¾…å»¶æ—¶
  */
 void miniOS_delay_ms(uint16_t nTick)
 {
@@ -420,23 +423,23 @@ void miniOS_SwHook()
     ;
 }
 
-/**************µÚÈı°æ¸Ä½ø½¨Òé*****************/
+/**************ç¬¬ä¸‰ç‰ˆæ”¹è¿›å»ºè®®*****************/
 /*
- * 1 Ôö¼ÓÏÈÈëÏÈ³ö¶ÓÁĞ£¬×÷Îª¾ÍĞ÷ÁĞ±íºÍÊı¾İ´«Êä·½°¸
- * 2 Ôö¼ÓĞÅºÅÁ¿»úÖÆ
-   Ôö¼ÓÒ»¸ö×´Ì¬£ºos_wait_sem,²¢Ôö¼ÓÒ»¸ösemÎÄ¼şÖ»ÓĞÄÃµ½ĞÅºÅÁ¿µÄÊ±ºò²Å¿ÉÒÔ±äÎªos_run,
+ * 1 å¢åŠ å…ˆå…¥å…ˆå‡ºé˜Ÿåˆ—ï¼Œä½œä¸ºå°±ç»ªåˆ—è¡¨å’Œæ•°æ®ä¼ è¾“æ–¹æ¡ˆ
+ * 2 å¢åŠ ä¿¡å·é‡æœºåˆ¶
+   å¢åŠ ä¸€ä¸ªçŠ¶æ€ï¼šos_wait_sem,å¹¶å¢åŠ ä¸€ä¸ªsemæ–‡ä»¶åªæœ‰æ‹¿åˆ°ä¿¡å·é‡çš„æ—¶å€™æ‰å¯ä»¥å˜ä¸ºos_run,
 */
 
-/*¶şÖµĞÅºÅÁ¿*/
+/*äºŒå€¼ä¿¡å·é‡*/
 /*
- * Ò»¸öĞÅºÅÁ¿×î¶àÌá¹©¸øÁ½¸öÏß³ÌÊ¹ÓÃ£¬·ñÔòÓĞ¿ÉÄÜ·¢Éú´íÎó
+ * ä¸€ä¸ªä¿¡å·é‡æœ€å¤šæä¾›ç»™ä¸¤ä¸ªçº¿ç¨‹ä½¿ç”¨ï¼Œå¦åˆ™æœ‰å¯èƒ½å‘ç”Ÿé”™è¯¯
  *
  *
  */
 
-/*ĞÅºÅÁ¿³õÊ¼»¯º¯Êı*/
+/*ä¿¡å·é‡åˆå§‹åŒ–å‡½æ•°*/
 /*
- * ½«ĞÅºÅÁ¿µÄÒ»Ğ©²ÎÊıÉèÖÃ³ÉÄ¬ÈÏÖµ
+ * å°†ä¿¡å·é‡çš„ä¸€äº›å‚æ•°è®¾ç½®æˆé»˜è®¤å€¼
  */
 void miniOS_sem_init()
 {
@@ -454,15 +457,15 @@ void miniOS_sem_init()
 // }
 /**/
 
-/*ĞÅºÅÁ¿µÈ´ıº¯Êı*/
+/*ä¿¡å·é‡ç­‰å¾…å‡½æ•°*/
 /*
- * semID ĞÅºÅÁ¿ID
- * Ê×ÏÈÒ»ÑÔ²»ºÏ¹ØÖĞ¶Ï
- * È»ºó¼ì²âIDÊÇ·ñºÏ·¨
- * ÔÙ¼ì²âĞÅºÅÁ¿ÊÇ·ñ±»Õ¼ÓÃ£¬Èç±»Õ¼ÓÃ£¬Ôò¹ÒÆğ±¾Ïß³Ì¡£ÉèÖÃ³ÉµÈ´ıĞÅºÅÁ¿µÄ×´Ì¬£¬
-   ½øĞĞÒ»´ÎÈÎÎñµ÷¶È
- * Èç¹ûĞÅºÅÁ¿Ã»ÓĞ±»Õ¼ÓÃÔò¼ÌĞø½øĞĞ£¬
- * Ïß³Ì»½ĞÑ½«´Ó±¾º¯ÊıºóÃæµÄ´úÂë½øĞĞÖ´ĞĞ
+ * semID ä¿¡å·é‡ID
+ * é¦–å…ˆä¸€è¨€ä¸åˆå…³ä¸­æ–­
+ * ç„¶åæ£€æµ‹IDæ˜¯å¦åˆæ³•
+ * å†æ£€æµ‹ä¿¡å·é‡æ˜¯å¦è¢«å ç”¨ï¼Œå¦‚è¢«å ç”¨ï¼Œåˆ™æŒ‚èµ·æœ¬çº¿ç¨‹ã€‚è®¾ç½®æˆç­‰å¾…ä¿¡å·é‡çš„çŠ¶æ€ï¼Œ
+   è¿›è¡Œä¸€æ¬¡ä»»åŠ¡è°ƒåº¦
+ * å¦‚æœä¿¡å·é‡æ²¡æœ‰è¢«å ç”¨åˆ™ç»§ç»­è¿›è¡Œï¼Œ
+ * çº¿ç¨‹å”¤é†’å°†ä»æœ¬å‡½æ•°åé¢çš„ä»£ç è¿›è¡Œæ‰§è¡Œ
  *
 */
 void miniOS_sem_take(uint8_t semID)
@@ -477,9 +480,9 @@ void miniOS_sem_take(uint8_t semID)
             if (miniOS_sem_table[semID].isTaked == semIdle)
             {
                 miniOS_sem_table[semID].isTaked = semTaked;
-                miniOS_curTask->runflag = miniOS_curTask->runflag; //ÕâÖÖÇé¿öÏÂ²»ÓÃÇĞ»»Ïß³Ì£¬ÄÃµ½ÁËĞÅºÅÁ¿¾ÍÍùÏÂÖ´ĞĞ
+                miniOS_curTask->runflag = miniOS_curTask->runflag; //è¿™ç§æƒ…å†µä¸‹ä¸ç”¨åˆ‡æ¢çº¿ç¨‹ï¼Œæ‹¿åˆ°äº†ä¿¡å·é‡å°±å¾€ä¸‹æ‰§è¡Œ
             }
-            else if (miniOS_sem_table[semID].isTaked == semTaked) //ÕâÖÖÇé¿öÏÂÒªÇĞ»»Ïß³Ì£¬µÈ´ıĞÅºÅÁ¿
+            else if (miniOS_sem_table[semID].isTaked == semTaked) //è¿™ç§æƒ…å†µä¸‹è¦åˆ‡æ¢çº¿ç¨‹ï¼Œç­‰å¾…ä¿¡å·é‡
             {
                 miniOS_curTask->runflag = os_wait_sem;
                 miniOS_curTask->waitSemID = semID;
@@ -492,11 +495,11 @@ void miniOS_sem_take(uint8_t semID)
         miniOS_RtTask_SW();
 }
 
-/*ĞÅºÅÁ¿ÊÍ·Åº¯Êı*/
+/*ä¿¡å·é‡é‡Šæ”¾å‡½æ•°*/
 /*
- * ĞÅºÅÁ¿ÊÍ·Åºó£¬½«±¾Ïß³ÌĞŞ¸ÄÎª¾ÍĞ÷Ì¬(os_sleep),
-   µÈ´ıÊ±¼äÆ¬µ½À´»½ĞÑ
- * semID ĞÅºÅÁ¿ID£¬±¾ÏµÍ³ÏÖÌá¹©ÓëÈÎÎñÊıÁ¿ÏàÍ¬µÄĞÅÁ¿
+ * ä¿¡å·é‡é‡Šæ”¾åï¼Œå°†æœ¬çº¿ç¨‹ä¿®æ”¹ä¸ºå°±ç»ªæ€(os_sleep),
+   ç­‰å¾…æ—¶é—´ç‰‡åˆ°æ¥å”¤é†’
+ * semID ä¿¡å·é‡IDï¼Œæœ¬ç³»ç»Ÿç°æä¾›ä¸ä»»åŠ¡æ•°é‡ç›¸åŒçš„ä¿¡é‡
 */
 void miniOS_sem_give(uint8_t semID)
 {
@@ -505,30 +508,30 @@ void miniOS_sem_give(uint8_t semID)
     {
         miniOS_sem_table[semID].isTaked = semIdle;
     }
-    miniOS_curTask->runflag = os_sleep; //ĞŞ¸ÄÎª¾ÍĞ÷Ì¬
+    miniOS_curTask->runflag = os_sleep; //ä¿®æ”¹ä¸ºå°±ç»ªæ€
     miniOS_hw_interrupt_enable(level);
-    miniOS_RtTask_SW(); //È»ºó·¢ÉúÒ»´ÎÈÎÎñÇĞ»»
+    miniOS_RtTask_SW(); //ç„¶åå‘ç”Ÿä¸€æ¬¡ä»»åŠ¡åˆ‡æ¢
 }
 
 /*************************************************************/
 
-/*×îÖ÷ÒªµÄ¾ÍÊÇ¶ÓÁĞ»º´æ¡¢ÈëÁĞ¡¢³öÁĞ*/
-/*ÈëÁĞ£ºÎ»ÖÃ/ÂúÁËÔõÃ´°ì*/
-/*ÈëÁĞÕÒ¶ÓÎ²£¬Ò»ÈëÎ²+1*/
-/*³öÁĞÕÒ¶ÔÍ·£¬Ò»³öÍ·+1*/
-/*Ö÷ÒªÊÇ¶ÓÍ·¶ÓÎ²µÄ´¦ÀíºÍÅĞ¶Ï*/
+/*æœ€ä¸»è¦çš„å°±æ˜¯é˜Ÿåˆ—ç¼“å­˜ã€å…¥åˆ—ã€å‡ºåˆ—*/
+/*å…¥åˆ—ï¼šä½ç½®/æ»¡äº†æ€ä¹ˆåŠ*/
+/*å…¥åˆ—æ‰¾é˜Ÿå°¾ï¼Œä¸€å…¥å°¾+1*/
+/*å‡ºåˆ—æ‰¾å¯¹å¤´ï¼Œä¸€å‡ºå¤´+1*/
+/*ä¸»è¦æ˜¯é˜Ÿå¤´é˜Ÿå°¾çš„å¤„ç†å’Œåˆ¤æ–­*/
 
-/*Õë¶Ô²»Í¬µÄ¶ÓÁĞµÄÍ¨ÓÃËã·¨*/
+/*é’ˆå¯¹ä¸åŒçš„é˜Ÿåˆ—çš„é€šç”¨ç®—æ³•*/
 
 // void queue_in(unsigned char **head,unsigned char **tail,unsigned char *pbuff,unsigned char pbufflen,unsigned char *data,unsigned char datalen);
 // int  queue_out(unsigned char **head,unsigned char **tail,unsigned char *pbuff,unsigned char pbufflen,unsigned char *data,unsigned char datalen);
 // void queue_init(unsigned char **head,unsigned char **tail,unsigned char *pbuff);
 // uint16_t queue_len(unsigned char **head,unsigned char **tail,unsigned char *pbuff,unsigned char pbufflen);
 
-/*ÈëÁĞ*/
+/*å…¥åˆ—*/
 /*
- * head ¶ÓÍ· tail ¶ÓÎ² pbuff »º´æÇøÊı×é pbufflen »º´æ³¤¶È
- * dataÈëÁĞÊı×éµØÖ·£¬datalenÈëÁĞÊı×é³¤¶È
+ * head é˜Ÿå¤´ tail é˜Ÿå°¾ pbuff ç¼“å­˜åŒºæ•°ç»„ pbufflen ç¼“å­˜é•¿åº¦
+ * dataå…¥åˆ—æ•°ç»„åœ°å€ï¼Œdatalenå…¥åˆ—æ•°ç»„é•¿åº¦
  */
 void queue_in(unsigned char **head, unsigned char **tail, unsigned char *pbuff, unsigned char pbufflen, unsigned char *data, unsigned char datalen)
 {
@@ -537,18 +540,18 @@ void queue_in(unsigned char **head, unsigned char **tail, unsigned char *pbuff, 
     for (num = 0; num < datalen; num++, data++)
     {
         // TODO
-        **tail = *data; //°ÑÊı¾İÈëÁĞ
-        (*tail)++;      //¶ÓÎ²+1
+        **tail = *data; //æŠŠæ•°æ®å…¥åˆ—
+        (*tail)++;      //é˜Ÿå°¾+1
         if (*tail == (pbuff + pbufflen))
         {
-            *tail = pbuff; //Èç¹ûµ½´ïpbufÎ²²¿£¬ÖØĞÂÖ¸ÏòpbufÊ×µØÖ·
+            *tail = pbuff; //å¦‚æœåˆ°è¾¾pbufå°¾éƒ¨ï¼Œé‡æ–°æŒ‡å‘pbufé¦–åœ°å€
         }
         if (*tail == *head)
-        { //¶ÓÎ²Ö¸Õë == ¶ÓÍ·Ö¸Õë
+        { //é˜Ÿå°¾æŒ‡é’ˆ == é˜Ÿå¤´æŒ‡é’ˆ
             // TODO
             if (++(*head) == (pbuff + pbufflen))
             {
-                //Èç¹ûµ½´ïpbuffÎ²²¿£¬ÖØĞÂÖ¸ÏòpbufÊ×µØÖ·
+                //å¦‚æœåˆ°è¾¾pbuffå°¾éƒ¨ï¼Œé‡æ–°æŒ‡å‘pbufé¦–åœ°å€
                 *head = pbuff;
             }
         }
@@ -556,10 +559,10 @@ void queue_in(unsigned char **head, unsigned char **tail, unsigned char *pbuff, 
     miniOS_hw_interrupt_enable(level);
 }
 
-/*³öÁĞ*/
+/*å‡ºåˆ—*/
 /*
- * head ¶ÓÍ· tail ¶ÓÎ² pbuff »º´æÇøÊı×é pbufflen »º´æ³¤¶È
- * data³öÁĞ£¨·µ»ØÖµ£©£¬datalenÈëÁĞÊı×é³¤¶È£¬Ä¿Ç°Ö»×öÁË1×Ö½Ú³öÁĞ
+ * head é˜Ÿå¤´ tail é˜Ÿå°¾ pbuff ç¼“å­˜åŒºæ•°ç»„ pbufflen ç¼“å­˜é•¿åº¦
+ * dataå‡ºåˆ—ï¼ˆè¿”å›å€¼ï¼‰ï¼Œdatalenå…¥åˆ—æ•°ç»„é•¿åº¦ï¼Œç›®å‰åªåšäº†1å­—èŠ‚å‡ºåˆ—
  */
 int queue_out(unsigned char **head, unsigned char **tail, unsigned char *pbuff, unsigned char pbufflen, unsigned char *data, unsigned char datalen)
 {
@@ -613,12 +616,12 @@ uint16_t queue_len(unsigned char **head, unsigned char **tail, unsigned char *pb
     return len;
 }
 
-//½¨Òé¸Ä³ÉintÀàĞÍ
+//å»ºè®®æ”¹æˆintç±»å‹
 int queue_strstr(unsigned char **head, unsigned char **tail, unsigned char *pbuff, uint16_t pbufflen, const char *substr)
 {
     uint8_t num = 0;
     int32_t level = miniOS_hw_interrupt_disable();
-    unsigned char *phead = *head; //´´½¨ÁÙÊ±Ö¸Õë£¬²»¸Ä±äÔ­Ê¼Öµ
+    unsigned char *phead = *head; //åˆ›å»ºä¸´æ—¶æŒ‡é’ˆï¼Œä¸æ”¹å˜åŸå§‹å€¼
     while (phead != *tail)
     {
         if (*phead != *substr)
@@ -630,7 +633,7 @@ int queue_strstr(unsigned char **head, unsigned char **tail, unsigned char *pbuf
             continue;
         }
 
-        //´´½¨ÁÙÊ±Ö¸Õë
+        //åˆ›å»ºä¸´æ—¶æŒ‡é’ˆ
         unsigned char *tmpstr = phead;
         char *tmpsubstr = (char *)substr;
 
@@ -638,7 +641,7 @@ int queue_strstr(unsigned char **head, unsigned char **tail, unsigned char *pbuf
         {
             if (*(tmpstr) != *tmpsubstr)
             {
-                //Æ¥ÅäÊ§°Ü
+                //åŒ¹é…å¤±è´¥
                 (phead)++;
                 if (phead == (pbuff + pbufflen))
                     phead = pbuff;
@@ -650,10 +653,10 @@ int queue_strstr(unsigned char **head, unsigned char **tail, unsigned char *pbuf
                 tmpstr = pbuff;
             tmpsubstr++;
         }
-        if (*tmpsubstr == '\0') //Æ¥Åä³É¹¦
+        if (*tmpsubstr == '\0') //åŒ¹é…æˆåŠŸ
         {
             miniOS_hw_interrupt_enable(level);
-            return num; //·µ»ØµÄÊÇÏÂ±ê
+            return num; //è¿”å›çš„æ˜¯ä¸‹æ ‡
         }
     }
     miniOS_hw_interrupt_enable(level);
